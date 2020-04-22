@@ -1,6 +1,6 @@
 package com.game.classes.client;
 
-import com.game.classes.Player;
+import com.game.helper.Util;
 import com.game.models.PlayerModel;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -8,6 +8,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
 import java.io.IOException;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -15,36 +16,43 @@ import java.util.concurrent.TimeoutException;
 
 public class Client implements Runnable, AutoCloseable {
 	private ConnectionFactory factory;
-	private Player player;
 	private Connection connection;
 	private Channel channel;
-	private String requestQueueName = "rpc_queue";
+	private String requestQueueName = "";
 	private PlayerModel playerModel = null;
-
+	private Random randomZoneNumber = new Random();
+	private String dir;
+	
 	protected Client(PlayerModel playerModel) throws IOException, TimeoutException {
 		playerModel.getUserName();
-		player = new Player();
+		this.dir = System.getProperty("user.dir");
+		String absolutePath = dir + "/zoneNumber.txt";
+		requestQueueName = "rpc_queue_" + randomZoneNumber.nextInt(Integer.parseInt(Util.getZoneNumber(absolutePath)));
 		this.playerModel = playerModel;
-		factory = player.connectToServer(factory);
+		factory = Util.connectToServer(factory);
 		connection = factory.newConnection();
 		channel = connection.createChannel();
 	}
 
-	@Override
+	@Override	
 	public void run() {
-		try (Client client = new Client(playerModel)) {
-			System.out.println(" [x] Requesting hello()");
-			String response = client.call("hello");
-			System.out.println(" [.] Got '" + response + "'");
-		} catch (Exception e) {
+		System.out.println(" [x] Requesting hello()");
+		String response = "";
+		try {
+			response = this.call("hello");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
+		System.out.println(" [.] Got '" + response + "'");
 	}
 
 	public String call(String message) throws IOException, InterruptedException {
 		final String corrId = UUID.randomUUID().toString();
-
+		System.out.println(requestQueueName);
 		String replyQueueName = channel.queueDeclare().getQueue();
 		AMQP.BasicProperties props = new AMQP.BasicProperties.Builder().correlationId(corrId).replyTo(replyQueueName)
 				.build();

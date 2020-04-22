@@ -6,28 +6,30 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 
+import com.game.helper.Util;
 import com.rabbitmq.client.*;
 
 public class RPCServer implements Runnable {
-	private static String uri = "amqp://rdraipzf:RX4SqBs7Zrgr9_jPmJLurG-i6znoF3ow@kangaroo.rmq.cloudamqp.com/rdraipzf";
 	private ConnectionFactory factory;
-	private static final String RPC_QUEUE_NAME = "rpc_queue";
+	private  String RPC_QUEUE_NAME = "";
 	private Connection connection;
 	private Channel channel;
-
+	private int serverId = 0;
 	private static String helloRPC() {
 		return "Hello RPC server ";
 	}
 
-	public RPCServer() throws IOException, TimeoutException {
-		factory = this.connectToServer(factory);
-		connection = factory.newConnection();
-		channel = connection.createChannel();
+	public RPCServer(int zoneId) throws IOException, TimeoutException {
+		this.serverId = zoneId;
+		this.RPC_QUEUE_NAME = "rpc_queue_" + zoneId;
+		this.factory = Util.connectToServer(factory);
+		this.connection = factory.newConnection();
+		this.channel = connection.createChannel();
 	}
 
 	@Override
 	public void run() {
-		try (Connection connection = factory.newConnection(); Channel channel = connection.createChannel()) {
+		try (Connection connection = this.connection; Channel channel = this.channel) {
 			channel.queueDeclare(RPC_QUEUE_NAME, false, false, false, null);
 			channel.queuePurge(RPC_QUEUE_NAME);
 
@@ -81,13 +83,4 @@ public class RPCServer implements Runnable {
 		}
 	}
 
-	private ConnectionFactory connectToServer(ConnectionFactory factory) {
-		factory = new ConnectionFactory();
-		try {
-			factory.setUri(uri);
-		} catch (KeyManagementException | NoSuchAlgorithmException | URISyntaxException e) {
-			e.printStackTrace();
-		}
-		return factory;
-	}
 }
