@@ -20,15 +20,18 @@ public class Client implements Runnable, AutoCloseable {
 	private Channel channel;
 	private String requestQueueName = "";
 	private PlayerModel playerModel = null;
-	private Random randomZoneNumber = new Random();
+	private Random random = new Random();
 	private String dir;
 	
 	protected Client(PlayerModel playerModel) throws IOException, TimeoutException {
 		playerModel.getUserName();
 		this.dir = System.getProperty("user.dir");
 		String absolutePath = dir + "/zoneNumber.txt";
-		requestQueueName = "rpc_queue_" + randomZoneNumber.nextInt(Integer.parseInt(Util.getZoneNumber(absolutePath)));
+		//requestQueueName = "rpc_queue_" + random.nextInt(Integer.parseInt(Util.getZoneNumber(absolutePath)));
+		requestQueueName = "rpc_queue_main";
 		this.playerModel = playerModel;
+		this.playerModel.setPositionX(random.nextInt(4));
+		this.playerModel.setPositionY(random.nextInt(4));
 		factory = Util.connectToServer(factory);
 		connection = factory.newConnection();
 		channel = connection.createChannel();
@@ -36,10 +39,9 @@ public class Client implements Runnable, AutoCloseable {
 
 	@Override	
 	public void run() {
-		System.out.println(" [x] Requesting hello()");
 		String response = "";
 		try {
-			response = this.call("hello");
+			response = this.call(this.playerModel.getPositionX(), this.playerModel.getPositionY());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -50,13 +52,15 @@ public class Client implements Runnable, AutoCloseable {
 		System.out.println(" [.] Got '" + response + "'");
 	}
 
-	public String call(String message) throws IOException, InterruptedException {
+	public String call(int positionX, int positionY) throws IOException, InterruptedException {
 		final String corrId = UUID.randomUUID().toString();
 		System.out.println(requestQueueName);
 		String replyQueueName = channel.queueDeclare().getQueue();
 		AMQP.BasicProperties props = new AMQP.BasicProperties.Builder().correlationId(corrId).replyTo(replyQueueName)
 				.build();
-
+		
+		String message = String.valueOf(positionX) + ":" + String.valueOf(positionY);
+		
 		channel.basicPublish("", requestQueueName, props, message.getBytes("UTF-8"));
 
 		final BlockingQueue<String> response = new ArrayBlockingQueue<>(1);

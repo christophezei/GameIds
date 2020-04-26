@@ -1,22 +1,29 @@
 package com.game.classes.server;
 
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.concurrent.TimeoutException;
 
+import com.game.classes.Zone;
 import com.game.helper.Util;
+import com.game.models.ZoneModel;
 
 public class RPCServerDriver {
 	public static void main(String[] args) throws IOException, TimeoutException {
-		Scanner scan = new Scanner(System.in);
-		System.out.println("Enter how many zones you want to have in your game: ");
-		int nbOfZones = scan.nextInt();
-		Util.saveZoneNumberToFile(String.valueOf(nbOfZones));
-		for (int zoneId = 0; zoneId < nbOfZones; zoneId++) {
-			new Thread(new RPCServer(zoneId)).start();
-		}
+		//Scanner scan = new Scanner(System.in);
+		int [][]map = initMap();	
+		String rpc_queue_tag = "main";
+		new Thread(new RPCServer(rpc_queue_tag, map)).start();
+	}
+	private static int[][] initMap() {
+		int counter = 1;
+		int[][] map = new int[4][4];
+		 for (int row = 0; row < map.length; row++) {
+		        for (int col = 0; col < map.length; col++) {
+		            map[row][col] = counter;
+		            counter++;
+		        }
+		    }
+		 return map;
 	}
 }
