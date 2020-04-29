@@ -7,8 +7,11 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.IOException;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -21,13 +24,8 @@ public class Client implements Runnable, AutoCloseable {
 	private String requestQueueName = "";
 	private PlayerModel playerModel = null;
 	private Random random = new Random();
-	private String dir;
 	
 	protected Client(PlayerModel playerModel) throws IOException, TimeoutException {
-		playerModel.getUserName();
-		this.dir = System.getProperty("user.dir");
-		String absolutePath = dir + "/zoneNumber.txt";
-		//requestQueueName = "rpc_queue_" + random.nextInt(Integer.parseInt(Util.getZoneNumber(absolutePath)));
 		requestQueueName = "rpc_queue_main";
 		this.playerModel = playerModel;
 		this.playerModel.setPositionX(random.nextInt(4));
@@ -39,9 +37,69 @@ public class Client implements Runnable, AutoCloseable {
 
 	@Override	
 	public void run() {
-		String response = "";
+		Scanner scanner = new Scanner(System.in);
+		String pressedKey = "";
+		int positionX = this.playerModel.getPositionX();
+		int positionY = this.playerModel.getPositionY();
+		while(true) {
+			switch (this.checkPlayerZone()) {
+			case 0:
+				System.out.println("Player in zone 0");
+				 positionX = this.playerModel.getPositionX();
+				 positionY = this.playerModel.getPositionY();
+				pressedKey = scanner.nextLine();
+				this.playerMovement(pressedKey, positionX, positionY);	
+				break;
+			case 1:
+				System.out.println("Player in zone 1");
+				positionX = this.playerModel.getPositionX();
+				positionY = this.playerModel.getPositionY();
+				pressedKey = scanner.nextLine();
+				this.playerMovement(pressedKey, positionX, positionY);
+				break;
+			case 2:
+				System.out.println("Player in zone 2");
+				positionX = this.playerModel.getPositionX();
+				positionY = this.playerModel.getPositionY();
+				pressedKey = scanner.nextLine();
+				this.playerMovement(pressedKey, positionX, positionY);
+				break;
+
+			case 3:
+				System.out.println("Player in zone 3");
+				positionX = this.playerModel.getPositionX();
+				positionY = this.playerModel.getPositionY();
+				pressedKey = scanner.nextLine();
+				this.playerMovement(pressedKey, positionX, positionY);
+				break;
+			default:
+				// code block
+			}	
+		}
+	}
+
+	private void playerMovement(String pressedKey, int positionX, int positionY) {
+		if(pressedKey.equals("w")) {
+			this.playerModel.setPositionX((positionX + 1) % 4);
+		}else if(pressedKey.equals("s")) {
+			if(positionX <= 0) {
+				positionX = 4;
+			}
+			this.playerModel.setPositionX(positionX - 1);
+		}else if(pressedKey.equals("d")) {
+			this.playerModel.setPositionY((positionY + 1) % 4);
+		}else if(pressedKey.equals("a")) {
+			if(positionY <= 0) {
+				positionY = 4;
+			}
+			this.playerModel.setPositionY(positionY - 1);
+		}
+	}
+
+	private int checkPlayerZone() {
+		String playerZone = "";
 		try {
-			response = this.call(this.playerModel.getPositionX(), this.playerModel.getPositionY());
+			playerZone = this.getPlayerZone(this.playerModel.getPositionX(), this.playerModel.getPositionY());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -49,12 +107,11 @@ public class Client implements Runnable, AutoCloseable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		System.out.println(" [.] Got '" + response + "'");
+		return Integer.parseInt(playerZone);
 	}
 
-	public String call(int positionX, int positionY) throws IOException, InterruptedException {
+	public String getPlayerZone(int positionX, int positionY) throws IOException, InterruptedException {
 		final String corrId = UUID.randomUUID().toString();
-		System.out.println(requestQueueName);
 		String replyQueueName = channel.queueDeclare().getQueue();
 		AMQP.BasicProperties props = new AMQP.BasicProperties.Builder().correlationId(corrId).replyTo(replyQueueName)
 				.build();
@@ -82,5 +139,4 @@ public class Client implements Runnable, AutoCloseable {
 		connection.close();
 
 	}
-
 }

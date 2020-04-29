@@ -1,13 +1,6 @@
 package com.game.helper;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.rmi.RemoteException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 
@@ -24,28 +17,4 @@ public class Util {
 		}
 		return factory;
 	}
-	
-	public static void saveZoneNumberToFile(String zoneNumber) {
-		try {
-			Path currentRelativePath = Paths.get("");
-			FileWriter myWriter = new FileWriter(currentRelativePath.toAbsolutePath().toString() + "/zoneNumber.txt");
-			myWriter.write(zoneNumber);
-			myWriter.close();
-		} catch (IOException e) {
-			System.out.println("An error occurred.");
-			e.printStackTrace();
-		}
-	}
-	
-	public static String getZoneNumber(String absolutePath){
-		String zoneNumber = null;
-
-		try {
-			zoneNumber = new String(Files.readAllBytes(Paths.get(absolutePath)), StandardCharsets.UTF_8);
-		} catch (IOException e) {
-			// can print any error
-		}
-		return zoneNumber;
-	}
-
 }

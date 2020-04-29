@@ -3,52 +3,30 @@ package com.game.classes;
 import com.game.models.ZoneModel;
 
 public class Zone {
-	public String checkPlayerZone(int[][] map,int positionX, int positionY,ZoneModel zoneModel) {
-		String message = "";
-		for (int row = 0; row < map.length; row++) {
-			for (int col = 0; col < map.length; col++) {
-				if (row >= zoneModel.start_x && row <= zoneModel.end_x && col >= zoneModel.start_y && col <= zoneModel.end_y) {
-					if(map[row][col] == map[positionX][positionY])
-						message = "Player in zone " + zoneModel.getZoneId();
-				}
-			}
+	private ZoneModel zoneModel;
+	public ZoneModel checkPlayerZone(int positionX, int positionY) {
+		ZoneModel zone0 = new ZoneModel(0, 1, 0, 1);
+		ZoneModel zone1 = new ZoneModel(0, 1, 2, 3);
+		ZoneModel zone2 = new ZoneModel(2, 3, 0, 1);
+		ZoneModel zone3 = new ZoneModel(2, 3, 2, 3);
+		if (positionX >= zone0.start_x && positionX <= zone0.end_x && positionY >= zone0.start_y
+				&& positionY <= zone0.end_y) {
+			zoneModel = zone0;
+			zoneModel.setZoneId(0);
+		} else if (positionX >= zone1.start_x && positionX <= zone1.end_x && positionY >= zone1.start_y
+				&& positionY <= zone1.end_y) {
+			zoneModel = zone1;
+			zoneModel.setZoneId(1);
+
+		} else if (positionX >= zone2.start_x && positionX <= zone2.end_x && positionY >= zone2.start_y
+				&& positionY <= zone2.end_y) {
+			zoneModel = zone2;
+			zoneModel.setZoneId(2);
+		} else if (positionX >= zone3.start_x && positionX <= zone3.end_x && positionY >= zone3.start_y
+				&& positionY <= zone3.end_y) {
+			zoneModel = zone3;
+			zoneModel.setZoneId(3);
 		}
-		return message;
+		return zoneModel;
 	}
-	
-
-	public void printZoneCoord(int[][] zoneCoord) {
-		for (int row = 0; row < zoneCoord.length; row++) {
-			for (int col = 0; col < zoneCoord.length; col++) {
-				System.out.print(zoneCoord[row][col] + "\t");
-			}
-			System.out.println();
-		}
-	}
-
-	/*
-	 * public void printZoneCoord(int[][] zoneCoord, ZoneModel zone ) { for (int row
-	 * = 0; row < zoneCoord.length; row++) { for (int col = 0; col <
-	 * zoneCoord.length; col++) { if (row >= zone.start_x && row <= zone.end_x &&
-	 * col >= zone.start_y && col <= zone.end_y)
-	 * System.out.print(zoneCoord[row][col] + "\t"); } System.out.println(); } }
-	 */
-
-
-	/*public int[][] fillZoneCoord(int[][] zoneCoord, ZoneModel zone) {
-		int subRow = 0;
-		int subCol = 0;
-		for (int row = 0; row < zoneCoord.length; row++) {
-			for (int col = 0; col < zoneCoord.length; col++) {
-				if (row >= zone.start_x && row <= zone.end_x && col >= zone.start_y && col <= zone.end_y) {
-					if (zoneCoord[row][col] != 0) {
-						this.subZoneCoord[subRow][subCol] = zoneCoord[row][col];
-					}
-
-				}
-
-			}
-		}
-		return subZoneCoord;
-	}*/
 }
