@@ -1,10 +1,13 @@
 package com.game.models;
 
-public class PlayerModel {
+import java.io.Serializable;
+
+public class PlayerModel implements Serializable {
 	private String userName;
+	private String userId;
 	private int positionX;
 	private int positionY;
-	
+
 	public int getPositionX() {
 		return positionX;
 	}
@@ -27,6 +30,14 @@ public class PlayerModel {
 
 	public void setUserName(String userName) {
 		this.userName = userName;
+	}
+
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
 	}
 
 }
