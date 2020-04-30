@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class PlayerModel implements Serializable {
 	private String userName;
-	private String userId;
+	private String zoneId;
 	private int positionX;
 	private int positionY;
 
@@ -32,12 +32,12 @@ public class PlayerModel implements Serializable {
 		this.userName = userName;
 	}
 
-	public String getUserId() {
-		return userId;
+	public String getZoneId() {
+		return zoneId;
 	}
 
-	public void setUserId(String userId) {
-		this.userId = userId;
+	public void setZoneId(String userId) {
+		this.zoneId = userId;
 	}
 
 }

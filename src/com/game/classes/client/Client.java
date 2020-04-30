@@ -11,7 +11,6 @@ import com.rabbitmq.client.DeliverCallback;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.UUID;
@@ -27,12 +26,18 @@ public class Client implements Runnable, AutoCloseable {
 	private static final String EXCHANGE_NAME = "zone_";
 	private PlayerModel playerModel = null;
 	private Random random = new Random();
-	
+	private String zoneId;
+	private String isCollide;
+	private String isNeighbour;
+	private String neighbourZoneId;
+
 	protected Client(PlayerModel playerModel) throws IOException, TimeoutException {
 		this.requestQueueName = "rpc_queue_main";
 		this.playerModel = playerModel;
-		this.playerModel.setPositionX(random.nextInt(4));
-		this.playerModel.setPositionY(random.nextInt(4));
+		//this.playerModel.setPositionX(random.nextInt(4));
+		//this.playerModel.setPositionY(random.nextInt(4));
+		this.playerModel.setPositionX(0);
+		this.playerModel.setPositionY(0);
 		factory = Util.connectToServer(factory);
 		connection = factory.newConnection();
 		channel = connection.createChannel();
@@ -43,156 +48,122 @@ public class Client implements Runnable, AutoCloseable {
 		Scanner scanner = new Scanner(System.in);
 		String pressedKey = "";
 		int positionX = this.playerModel.getPositionX();
-		int positionY = this.playerModel.getPositionY();	
+		int positionY = this.playerModel.getPositionY();
+		try {
+			consumeMessages();
+		} catch (IOException | TimeoutException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
 		while (true) {
-			switch (this.checkPlayerZone()) {
-			case 0:
-				try {
-					this.initExchange(0);
-					this.consumeMessage(0,"zone_0");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+			this.checkPlayerZone();
+			System.out.println("Player in zone " + Integer.parseInt(this.zoneId));
+			positionX = this.playerModel.getPositionX();
+			positionY = this.playerModel.getPositionY();
+			try {
+				if (this.isNeighbour.equals("1")) {
+					produceMessages();
 				}
-				System.out.println("Player in zone 0");
-				positionX = this.playerModel.getPositionX();
-				positionY = this.playerModel.getPositionY();
-				try {
-					this.communicateWithNeighbour(0,"zone_0");
-				} catch (UnsupportedEncodingException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				pressedKey = scanner.nextLine();
-				this.playerMovement(pressedKey, positionX, positionY);
-				break;
-			case 1:
-				try {
-					this.initExchange(1);
-					this.consumeMessage(1,"zone_1");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				System.out.println("Player in zone 1");
-				positionX = this.playerModel.getPositionX();
-				positionY = this.playerModel.getPositionY();
-				try {
-					this.communicateWithNeighbour(1,"zone_1");
-				} catch (UnsupportedEncodingException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				pressedKey = scanner.nextLine();
-				this.playerMovement(pressedKey, positionX, positionY);
-				break;
-			case 2:
-				try {
-					this.initExchange(2);
-					this.consumeMessage(2,"zone_2");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				System.out.println("Player in zone 2");
-				positionX = this.playerModel.getPositionX();
-				positionY = this.playerModel.getPositionY();
-				try {
-					this.communicateWithNeighbour(2,"zone_2");
-				} catch (UnsupportedEncodingException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				pressedKey = scanner.nextLine();
-				this.playerMovement(pressedKey, positionX, positionY);
-				break;
 
-			case 3:
-				try {
-					this.initExchange(3);
-					this.consumeMessage(3,"zone_3");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				System.out.println("Player in zone 3");
-				positionX = this.playerModel.getPositionX();
-				positionY = this.playerModel.getPositionY();
-				try {
-					this.communicateWithNeighbour(3,"zone_3");
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				pressedKey = scanner.nextLine();
-				this.playerMovement(pressedKey, positionX, positionY);
-				break;
-			default:
-				System.out.println("Player out of zones");
+			} catch (NumberFormatException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
+			pressedKey = scanner.nextLine();
+			this.playerMovement(pressedKey, positionX, positionY, this.isCollide);
 		}
 	}
+	
+	private void consumeMessages() throws IOException, TimeoutException {
+			Connection connection = factory.newConnection();
+		    Channel channel = connection.createChannel();
 
-	private void initExchange(int zoneId) throws IOException {
-		this.channel.exchangeDeclare(EXCHANGE_NAME + zoneId, "topic");
+		    channel.exchangeDeclare(EXCHANGE_NAME , "topic");
+		    String queueName = channel.queueDeclare().getQueue();
+
+		    channel.queueBind(queueName, EXCHANGE_NAME , "zone_0");
+		    channel.queueBind(queueName, EXCHANGE_NAME , "zone_1");
+		    channel.queueBind(queueName, EXCHANGE_NAME , "zone_2");
+		    channel.queueBind(queueName, EXCHANGE_NAME , "zone_3");
+
+		    System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+
+		    DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+		        String message = new String(delivery.getBody(), "UTF-8");
+		        System.out.println(" [x] Received '" +
+		            delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
+		    };
+		    channel.basicConsume(queueName, true, deliverCallback, consumerTag -> { });		
 	}
 
-	private void consumeMessage(int zoneId, String queueRouting) throws IOException {
-		this.channel.exchangeDeclare(EXCHANGE_NAME + zoneId, "topic");
-	    String queueName = this.channel.queueDeclare().getQueue();
-	    channel.queueBind(queueName, EXCHANGE_NAME + zoneId, queueRouting);
-	    
-	    DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-	        String message = new String(delivery.getBody(), "UTF-8");
-	        System.out.println(" [x] Received '" +
-	            delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
-	    };
-	    channel.basicConsume(queueName, true, deliverCallback, consumerTag -> { });
-	  }
-	/*private Boolean isPlayerNeighbour(PlayerModel player) {
-
-	}*/
-
-	private void communicateWithNeighbour(int zoneId, String queueRouting) throws UnsupportedEncodingException, IOException {
-		this.channel.exchangeDeclare(EXCHANGE_NAME + zoneId, "topic");
-		String message = "Hello from player " + this.playerModel.getUserName();
-		channel.basicPublish(EXCHANGE_NAME + zoneId, queueRouting, null, message.getBytes("UTF-8"));
-		System.out.println(" [x] Sent  ':'" + message + "'");
+	private void produceMessages() {
+		if (!neighbourZoneId.equals("-1")) {
+			try (Connection connection = factory.newConnection();
+			        Channel channel = connection.createChannel()) {
+					String message = "hello";
+					channel.exchangeDeclare(EXCHANGE_NAME , "topic");
+			        channel.basicPublish(EXCHANGE_NAME ,  "zone_" + this.neighbourZoneId, null, message.getBytes("UTF-8"));
+			        System.out.println(" [x] Sent '" +  "zone_" + this.neighbourZoneId + "':'" + message + "'");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (TimeoutException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}	
 	}
 
-	private void playerMovement(String pressedKey, int positionX, int positionY) {
+
+	private void playerMovement(String pressedKey, int positionX, int positionY, String isCollide) {
 		if (pressedKey.equals("w")) {
-			this.playerModel.setPositionX((positionX + 1) % 4);
+			if (isCollide.equals("0"))
+				this.playerModel.setPositionX((positionX + 1) % 4);
+			else if (isCollide.equals("1")) {
+				System.out.println("Can't move otherwise players will collide");
+			}
 		} else if (pressedKey.equals("s")) {
 			if (positionX <= 0) {
 				positionX = 4;
 			}
-			this.playerModel.setPositionX(positionX - 1);
+			if (isCollide.equals("0"))
+				this.playerModel.setPositionX(positionX - 1);
+			else if (isCollide.equals("1")) {
+				System.out.println("Can't move otherwise players will collide");
+			}
 		} else if (pressedKey.equals("d")) {
-			this.playerModel.setPositionY((positionY + 1) % 4);
+			if (isCollide.equals("0"))
+				this.playerModel.setPositionY((positionY + 1) % 4);
+			else if (isCollide.equals("1")) {
+				System.out.println("Can't move otherwise players will collide");
+			}
 		} else if (pressedKey.equals("a")) {
 			if (positionY <= 0) {
 				positionY = 4;
 			}
-			this.playerModel.setPositionY(positionY - 1);
+			if (isCollide.equals("0"))
+				this.playerModel.setPositionY(positionY - 1);
+			else if (isCollide.equals("1")) {
+				System.out.println("Can't move otherwise players will collide");
+			}
 		}
 	}
 
-	private int checkPlayerZone() {
+	private void checkPlayerZone() {
 		String playerZone = "";
+
 		try {
 			playerZone = this.getPlayerZone(this.playerModel);
+			String[] parts = playerZone.split(":");
+			String collideBool = parts[0];
+			String isNeighbourBool = parts[1];
+			String neighbourId = parts[2];
+			String zone = parts[3];
+			this.zoneId = zone;
+			this.isCollide = collideBool;
+			this.isNeighbour = isNeighbourBool;
+			this.neighbourZoneId = neighbourId;
+
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -200,7 +171,6 @@ public class Client implements Runnable, AutoCloseable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return Integer.parseInt(playerZone);
 	}
 
 	public String getPlayerZone(PlayerModel playerModel) throws IOException, InterruptedException {
@@ -208,12 +178,11 @@ public class Client implements Runnable, AutoCloseable {
 		String replyQueueName = channel.queueDeclare().getQueue();
 		AMQP.BasicProperties props = new AMQP.BasicProperties.Builder().correlationId(corrId).replyTo(replyQueueName)
 				.build();
-		
+
 		FileOutputStream fos = new FileOutputStream("serialization.txt");
-	    ObjectOutputStream oos = new ObjectOutputStream(fos);
-	    oos.writeObject(playerModel);
-		
-		//String message = String.valueOf(playerModel.getPositionX()) + ":" + String.valueOf(this.playerModel.getPositionY());
+		ObjectOutputStream oos = new ObjectOutputStream(fos);
+		oos.writeObject(playerModel);
+
 		String message = "Sending object..";
 		channel.basicPublish("", requestQueueName, props, message.getBytes("UTF-8"));
 
@@ -230,8 +199,6 @@ public class Client implements Runnable, AutoCloseable {
 		channel.basicCancel(ctag);
 		return result;
 	}
-	
-	
 
 	@Override
 	public void close() throws Exception {
