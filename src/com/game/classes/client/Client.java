@@ -34,8 +34,8 @@ public class Client implements Runnable, AutoCloseable {
 	protected Client(PlayerModel playerModel) throws IOException, TimeoutException {
 		this.requestQueueName = "rpc_queue_main";
 		this.playerModel = playerModel;
-		//this.playerModel.setPositionX(random.nextInt(4));
-		//this.playerModel.setPositionY(random.nextInt(4));
+		// this.playerModel.setPositionX(random.nextInt(4));
+		// this.playerModel.setPositionY(random.nextInt(4));
 		this.playerModel.setPositionX(0);
 		this.playerModel.setPositionY(0);
 		factory = Util.connectToServer(factory);
@@ -57,9 +57,9 @@ public class Client implements Runnable, AutoCloseable {
 		}
 		while (true) {
 			this.checkPlayerZone();
-			System.out.println("Player in zone " + Integer.parseInt(this.zoneId));
 			positionX = this.playerModel.getPositionX();
 			positionY = this.playerModel.getPositionY();
+			System.out.println("Player in zone " + Integer.parseInt(this.zoneId) + " at position " + positionX + " " + positionY);
 			try {
 				if (this.isNeighbour.equals("1")) {
 					produceMessages();
@@ -70,40 +70,39 @@ public class Client implements Runnable, AutoCloseable {
 				e.printStackTrace();
 			}
 			pressedKey = scanner.nextLine();
-			this.playerMovement(pressedKey, positionX, positionY, this.isCollide);
+			this.playerMovement(pressedKey, positionX, positionY);
 		}
 	}
-	
+
 	private void consumeMessages() throws IOException, TimeoutException {
-			Connection connection = factory.newConnection();
-		    Channel channel = connection.createChannel();
+		Connection connection = factory.newConnection();
+		Channel channel = connection.createChannel();
 
-		    channel.exchangeDeclare(EXCHANGE_NAME , "topic");
-		    String queueName = channel.queueDeclare().getQueue();
+		channel.exchangeDeclare(EXCHANGE_NAME, "topic");
+		String queueName = channel.queueDeclare().getQueue();
 
-		    channel.queueBind(queueName, EXCHANGE_NAME , "zone_0");
-		    channel.queueBind(queueName, EXCHANGE_NAME , "zone_1");
-		    channel.queueBind(queueName, EXCHANGE_NAME , "zone_2");
-		    channel.queueBind(queueName, EXCHANGE_NAME , "zone_3");
+		channel.queueBind(queueName, EXCHANGE_NAME, "zone_0");
+		channel.queueBind(queueName, EXCHANGE_NAME, "zone_1");
+		channel.queueBind(queueName, EXCHANGE_NAME, "zone_2");
+		channel.queueBind(queueName, EXCHANGE_NAME, "zone_3");
 
-		    System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+		System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
 
-		    DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-		        String message = new String(delivery.getBody(), "UTF-8");
-		        System.out.println(" [x] Received '" +
-		            delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
-		    };
-		    channel.basicConsume(queueName, true, deliverCallback, consumerTag -> { });		
+		DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+			String message = new String(delivery.getBody(), "UTF-8");
+			System.out.println(" [x] Received '" + delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
+		};
+		channel.basicConsume(queueName, true, deliverCallback, consumerTag -> {
+		});
 	}
 
 	private void produceMessages() {
 		if (!neighbourZoneId.equals("-1")) {
-			try (Connection connection = factory.newConnection();
-			        Channel channel = connection.createChannel()) {
-					String message = "hello";
-					channel.exchangeDeclare(EXCHANGE_NAME , "topic");
-			        channel.basicPublish(EXCHANGE_NAME ,  "zone_" + this.neighbourZoneId, null, message.getBytes("UTF-8"));
-			        System.out.println(" [x] Sent '" +  "zone_" + this.neighbourZoneId + "':'" + message + "'");
+			try (Connection connection = factory.newConnection(); Channel channel = connection.createChannel()) {
+				String message = "hello";
+				channel.exchangeDeclare(EXCHANGE_NAME, "topic");
+				channel.basicPublish(EXCHANGE_NAME, "zone_" + this.neighbourZoneId, null, message.getBytes("UTF-8"));
+				System.out.println(" [x] Sent '" + "zone_" + this.neighbourZoneId + "':'" + message + "'");
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -111,42 +110,72 @@ public class Client implements Runnable, AutoCloseable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}	
+		}
 	}
 
-
-	private void playerMovement(String pressedKey, int positionX, int positionY, String isCollide) {
+	private void playerMovement(String pressedKey, int positionX, int positionY) {
 		if (pressedKey.equals("w")) {
-			if (isCollide.equals("0"))
-				this.playerModel.setPositionX((positionX + 1) % 4);
-			else if (isCollide.equals("1")) {
-				System.out.println("Can't move otherwise players will collide");
+			positionX=incPositionX(positionX);
+			this.checkPlayerZone();
+			if (isCollide.equals("1")) {
+				positionX=decPositionX(positionX);
+				System.out.println("Can't move to the forward we have a collision");
 			}
+
 		} else if (pressedKey.equals("s")) {
-			if (positionX <= 0) {
-				positionX = 4;
-			}
-			if (isCollide.equals("0"))
-				this.playerModel.setPositionX(positionX - 1);
-			else if (isCollide.equals("1")) {
-				System.out.println("Can't move otherwise players will collide");
+			positionX=decPositionX(positionX);
+			this.checkPlayerZone();
+			if (isCollide.equals("1")) {
+				positionX=incPositionX(positionX);
+				System.out.println("Can't move to the backward we have a collision");
 			}
 		} else if (pressedKey.equals("d")) {
-			if (isCollide.equals("0"))
-				this.playerModel.setPositionY((positionY + 1) % 4);
-			else if (isCollide.equals("1")) {
-				System.out.println("Can't move otherwise players will collide");
+			positionY=incPositionY(positionY);
+			this.checkPlayerZone();
+			if (isCollide.equals("1")) {
+				positionY=decPositionY(positionY);
+				System.out.println("Can't move to the right we have a collision");
 			}
+
 		} else if (pressedKey.equals("a")) {
-			if (positionY <= 0) {
-				positionY = 4;
+			positionY=decPositionY(positionY);
+			this.checkPlayerZone();
+			if (isCollide.equals("1")) {
+				positionY=incPositionY(positionY);
+				System.out.println("Can't move to the left we have a collision");
 			}
-			if (isCollide.equals("0"))
-				this.playerModel.setPositionY(positionY - 1);
-			else if (isCollide.equals("1")) {
-				System.out.println("Can't move otherwise players will collide");
-			}
+
 		}
+	}
+
+	private int decPositionY(int positionY) {
+		if (positionY <= 0) {
+			positionY = 4;
+		}
+		positionY-=1;
+		this.playerModel.setPositionY(positionY);
+		return positionY;
+	}
+
+	private int incPositionY(int positionY) {
+		positionY +=1;
+		this.playerModel.setPositionY((positionY) % 4);
+		return positionY;
+	}
+
+	private int decPositionX(int positionX) {
+		if (positionX <= 0) {
+			positionX = 4;
+		}
+		positionX-=1;
+		this.playerModel.setPositionX(positionX);
+		return positionX;
+	}
+
+	private int incPositionX(int positionX) {
+		positionX+=1;
+		this.playerModel.setPositionX((positionX) % 4);
+		return positionX;
 	}
 
 	private void checkPlayerZone() {

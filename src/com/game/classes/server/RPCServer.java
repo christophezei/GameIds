@@ -67,7 +67,7 @@ public class RPCServer implements Runnable {
 				if (neighbourPosX == playerModel.getPositionX() && neighbourPosY == playerModel.getPositionY()) {
 					System.out.println("Players collide !!");
 					collideBool = "1";
-				} else if (diffX == 1 || diffY == 1) {
+				} else if ((diffX == 1 && (diffY>=-1 && diffY<=0))|| (diffY == 1 && (diffX>=-1 && diffX<=0))){
 					System.out.println("Players are Neighbours !!");
 					neighbourZoneId = ((PlayerModel) mapElement.getValue()).getZoneId();
 					isNeighbourBool = "1";
@@ -95,7 +95,7 @@ public class RPCServer implements Runnable {
 				String message = new String(delivery.getBody(), "UTF-8");
 
 				System.out.println(" [.] (" + message + ")");
-				System.out.println(" [.] (" + playerModel.getPositionX() + "," + playerModel.getPositionY() + ")");
+				//System.out.println(" [.] (" + playerModel.getPositionX() + "," + playerModel.getPositionY() + ")");
 				this.zoneModel = this.zone.checkPlayerZone(playerModel.getPositionX(), playerModel.getPositionY());
 				playerModel.setZoneId(String.valueOf(zoneModel.getZoneId()));
 				response = this.checkIfPlayerIsNeighbour(playerModel);
