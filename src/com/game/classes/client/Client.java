@@ -42,7 +42,7 @@ public class Client implements Runnable {
 	private String dim;
 	private MapGidLayout map;
 	private JFrame f;
-	private HashMap<String, String> players;
+	private String playerCoordinates;
 
 	protected Client(PlayerModel playerModel) throws IOException, TimeoutException {
 		this.requestQueueName = "rpc_queue_main";
@@ -61,9 +61,15 @@ public class Client implements Runnable {
 		int positionX = this.playerModel.getPositionX();
 		int positionY = this.playerModel.getPositionY();
 		System.out.println("press 'e' to enter the map from a random entry");
+		try {
+			consumeCoordinates();
+		} catch (IOException | TimeoutException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
 		while (true) {
 			pressedKey = scanner.nextLine();
-			if(pressedKey.equals("/exit")) {
+			if (pressedKey.equals("/exit")) {
 				try {
 					this.close(this.channel);
 				} catch (IOException e) {
@@ -79,6 +85,7 @@ public class Client implements Runnable {
 				try {
 					if (isNeighbour.equals("1"))
 						this.sayHello();
+					broadCastCoordinatesToAllZones();
 					if (prevZoneId != null || this.zoneId != null) {
 						this.consumeMessages(this.zoneId, prevZoneId);
 					}
@@ -148,12 +155,34 @@ public class Client implements Runnable {
 		}
 	}
 
+	private void consumeCoordinates() throws IOException, TimeoutException {
+		Connection connection = factory.newConnection();
+		Channel channel = connection.createChannel();
+
+		String queueName = "BRODACAST";
+		channel.exchangeDeclare(EXCHANGE_NAME, "fanout");
+		channel.queueDeclare(queueName, false, false, false, null);
+		channel.queueBind(queueName, EXCHANGE_NAME, "BRODACAST");
+
+		System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+
+		DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+			String message = new String(delivery.getBody(), "UTF-8");
+			System.out.println(" [x] Received '" + delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
+			this.playerCoordinates = message;
+			this.draw();
+		};
+		channel.basicConsume(queueName, true, deliverCallback, consumerTag -> {
+		});
+	}
+
 	private void broadCastCoordinatesToAllZones() {
 		try (Connection connection = factory.newConnection(); Channel channel = connection.createChannel()) {
-			String message = this.playerModel.getPositionX() + ":" + this.playerModel.getPositionY();
-			channel.exchangeDeclare(EXCHANGE_NAME, "topic");
-			channel.basicPublish(EXCHANGE_NAME, "zone_" + this.zoneId, null, message.getBytes("UTF-8"));
-			System.out.println(" [x] Sent '" + "zone_" + this.zoneId + "':'" + message + "'");
+			String message = this.playerModel.getPositionX() + ":" + this.playerModel.getPositionY() + ":"
+					+ this.playerModel.getUserName();
+			channel.exchangeDeclare(EXCHANGE_NAME + "BROADCAST", "fanout");
+			channel.basicPublish(EXCHANGE_NAME, "BROADCAST", null, message.getBytes("UTF-8"));
+			System.out.println(" [x] Sent '" + "Broadcast" + "':'" + message + "'");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -266,22 +295,15 @@ public class Client implements Runnable {
 		}
 	}
 
-	private void draw(String playerList) {
-		players = Util.parseMap(playerList);
-		Iterator hmIterator = players.entrySet().iterator();
-		while (hmIterator.hasNext()) {
-			Map.Entry mapElement = (Map.Entry) hmIterator.next();
-
-			String[] parts = ((String) mapElement.getValue()).split("zoneId=");
-			String userName = parts[0];
-			String positionX = parts[1];
-			String positionY = parts[2];
-
-			this.initGrid(this.map);
-			this.map.playerAtPosition(Integer.parseInt(positionX), Integer.parseInt(positionY), userName);
-		}
-
+	private void draw() {
+		String[] parts = this.playerCoordinates.split(":");
+		String positionX = parts[0];
+		String positionY = parts[1];
+		String userName = parts[2];
+		this.initGrid(this.map);
+		this.map.playerAtPosition(Integer.parseInt(positionX), Integer.parseInt(positionY), userName);
 	}
+
 	private void close(Channel channel) throws IOException {
 		channel.queueUnbind("zone_" + this.zoneId, EXCHANGE_NAME + this.zoneId, "_" + this.playerModel.getUserName());
 		System.exit(0);

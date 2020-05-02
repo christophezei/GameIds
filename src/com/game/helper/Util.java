@@ -7,7 +7,7 @@ import java.util.HashMap;
 
 import com.rabbitmq.client.ConnectionFactory;
 
-public class Util{
+public class Util {
 	private static String uri = "amqp://rdraipzf:RX4SqBs7Zrgr9_jPmJLurG-i6znoF3ow@kangaroo.rmq.cloudamqp.com/rdraipzf";
 
 	public static ConnectionFactory connectToServer(ConnectionFactory factory) {
@@ -18,13 +18,5 @@ public class Util{
 			e.printStackTrace();
 		}
 		return factory;
-	}
-	public static HashMap<String,String> parseMap(String text) {
-		HashMap<String,String> map = new HashMap<String,String>();
-	    for(String keyValue: text.split(", ")) {
-	        String[] parts = keyValue.split("=", 2);
-	        map.put(parts[0], parts[1]);
-	    }
-	    return map;
 	}
 }
