@@ -40,4 +40,10 @@ public class PlayerModel implements Serializable {
 		this.zoneId = userId;
 	}
 
+	@Override
+	public String toString() {
+		return "PlayerModel{" + "username=" + userName + ", zoneId=" + zoneId + ",positionX=" + positionX
+				+ ",positionY=" + positionY + '}';
+	}
+
 }

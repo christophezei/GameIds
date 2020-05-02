@@ -3,7 +3,11 @@ package com.game.classes.client;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.concurrent.TimeoutException;
+
+import javax.swing.JFrame;
+
 import com.game.models.PlayerModel;
+import com.game.ui.MapGidLayout;
 
 public class ClientDriver {
 	public static void main(String[] args) throws IOException, TimeoutException{
@@ -14,4 +18,6 @@ public class ClientDriver {
 		player.setUserName(args[0]); 
 		new Thread(new Client(player)).start();
 	}
+
+
 }

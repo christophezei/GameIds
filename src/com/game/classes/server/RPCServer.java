@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+
 import com.game.classes.Zone;
 import com.game.helper.Util;
 import com.game.models.PlayerModel;
@@ -21,6 +22,8 @@ public class RPCServer implements Runnable {
 	private ZoneModel zoneModel = new ZoneModel(0, 0, 0, 0);
 	private Zone zone;
 	private HashMap<String, PlayerModel> players;
+	//private MapGidLayout map;
+	//private JFrame f;
 
 	public RPCServer() throws IOException, TimeoutException {
 		this.zone = new Zone();
@@ -41,7 +44,7 @@ public class RPCServer implements Runnable {
 			e.printStackTrace();
 		}
 	}
-
+	
 	private void initQueues() throws IOException {
 		this.channel.queueDeclare(RPC_QUEUE_NAME, false, false, false, null);
 		this.channel.queuePurge(RPC_QUEUE_NAME);
@@ -54,7 +57,7 @@ public class RPCServer implements Runnable {
 	private String checkIfPlayerIsNeighbour(PlayerModel playerModel) {
 		Iterator hmIterator = players.entrySet().iterator();
 		int neighbourPosX, neighbourPosY, diffX, diffY;
-		String currentUsername, collideBool = "0", isNeighbourBool = "0", neighbourZoneId = "-1";
+		String currentUsername, collideBool = "0", isNeighbourBool = "0", neighbourZoneId = "-1", neighbourName = "-1";
 
 		while (hmIterator.hasNext()) {
 			Map.Entry mapElement = (Map.Entry) hmIterator.next();
@@ -67,14 +70,15 @@ public class RPCServer implements Runnable {
 				if (neighbourPosX == playerModel.getPositionX() && neighbourPosY == playerModel.getPositionY()) {
 					System.out.println("Players collide !!");
 					collideBool = "1";
-				} else if ((diffX == 1 && (diffY>=-1 && diffY<=0))|| (diffY == 1 && (diffX>=-1 && diffX<=0))){
+				} else if ((diffX >= -1 && diffX<=1) && (diffY >= -1 && diffY<=1)){
 					System.out.println("Players are Neighbours !!");
 					neighbourZoneId = ((PlayerModel) mapElement.getValue()).getZoneId();
+					neighbourName = ((PlayerModel) mapElement.getValue()).getUserName();
 					isNeighbourBool = "1";
 				}
 			}
 		}
-		return collideBool + ":" + isNeighbourBool + ":" + neighbourZoneId;
+		return collideBool + ":" + isNeighbourBool + ":" + neighbourZoneId + ":" + neighbourName;
 	}
 
 	private void checkPlayerZone() throws IOException {
@@ -90,14 +94,12 @@ public class RPCServer implements Runnable {
 				FileInputStream fis = new FileInputStream("serialization.txt");
 				ObjectInputStream ois = new ObjectInputStream(fis);
 				PlayerModel playerModel = (PlayerModel) ois.readObject();
+				this.zoneModel = this.zone.checkPlayerZone(playerModel.getPositionX(), playerModel.getPositionY());
+				playerModel.setZoneId(String.valueOf(zoneModel.getZoneId()));
 				this.addPlayer(playerModel);
 				System.out.println(playerModel.getUserName());
 				String message = new String(delivery.getBody(), "UTF-8");
-
 				System.out.println(" [.] (" + message + ")");
-				//System.out.println(" [.] (" + playerModel.getPositionX() + "," + playerModel.getPositionY() + ")");
-				this.zoneModel = this.zone.checkPlayerZone(playerModel.getPositionX(), playerModel.getPositionY());
-				playerModel.setZoneId(String.valueOf(zoneModel.getZoneId()));
 				response = this.checkIfPlayerIsNeighbour(playerModel);
 				response += ":" + String.valueOf(zoneModel.getZoneId());
 			} catch (RuntimeException e) {
