@@ -39,6 +39,7 @@ public class Client implements Runnable {
 	private String isNeighbour;
 	private String neighbourZoneId;
 	private String neighbourPlayerUsername;
+	private String dim;
 	private MapGidLayout map;
 	private JFrame f;
 	private HashMap<String, String> players;
@@ -46,10 +47,6 @@ public class Client implements Runnable {
 	protected Client(PlayerModel playerModel) throws IOException, TimeoutException {
 		this.requestQueueName = "rpc_queue_main";
 		this.playerModel = playerModel;
-		// this.playerModel.setPositionX(random.nextInt(4));
-		// this.playerModel.setPositionY(random.nextInt(4));
-		this.playerModel.setPositionX(0);
-		this.playerModel.setPositionY(0);
 		this.factory = Util.connectToServer(factory);
 		connection = factory.newConnection();
 		channel = connection.createChannel();
@@ -168,17 +165,20 @@ public class Client implements Runnable {
 
 	private void playerMovement(String pressedKey, int positionX, int positionY) throws TimeoutException {
 		if (pressedKey.equals("e")) {
+			this.checkPlayerInfo();
+			this.playerModel.setPositionX(random.nextInt(Integer.parseInt(dim)));
+			this.playerModel.setPositionY(random.nextInt(Integer.parseInt(dim)));
+			this.checkPlayerInfo();
 			positionX = this.playerModel.getPositionX();
 			positionY = this.playerModel.getPositionY();
-			this.checkPlayerZone();
 			if (isCollide.equals("1")) {
-				this.playerModel.setPositionX(random.nextInt(4));
-				this.playerModel.setPositionY(random.nextInt(4));
+				this.playerModel.setPositionX(random.nextInt(Integer.parseInt(dim)));
+				this.playerModel.setPositionY(random.nextInt(Integer.parseInt(dim)));
 			}
 		}
 		if (pressedKey.equals("w")) {
 			positionX = incPositionX(positionX);
-			this.checkPlayerZone();
+			this.checkPlayerInfo();
 			if (isCollide.equals("1")) {
 				positionX = decPositionX(positionX);
 				System.out.println("Can't move to the forward we have a collision");
@@ -186,14 +186,14 @@ public class Client implements Runnable {
 
 		} else if (pressedKey.equals("s")) {
 			positionX = decPositionX(positionX);
-			this.checkPlayerZone();
+			this.checkPlayerInfo();
 			if (isCollide.equals("1")) {
 				positionX = incPositionX(positionX);
 				System.out.println("Can't move to the backward we have a collision");
 			}
 		} else if (pressedKey.equals("d")) {
 			positionY = incPositionY(positionY);
-			this.checkPlayerZone();
+			this.checkPlayerInfo();
 			if (isCollide.equals("1")) {
 				positionY = decPositionY(positionY);
 				System.out.println("Can't move to the right we have a collision");
@@ -201,7 +201,7 @@ public class Client implements Runnable {
 
 		} else if (pressedKey.equals("a")) {
 			positionY = decPositionY(positionY);
-			this.checkPlayerZone();
+			this.checkPlayerInfo();
 			if (isCollide.equals("1")) {
 				positionY = incPositionY(positionY);
 				System.out.println("Can't move to the left we have a collision");
@@ -212,7 +212,7 @@ public class Client implements Runnable {
 
 	private int decPositionY(int positionY) {
 		if (positionY <= 0) {
-			positionY = 4;
+			positionY = Integer.parseInt(dim);
 		}
 		positionY -= 1;
 		this.playerModel.setPositionY(positionY);
@@ -221,13 +221,13 @@ public class Client implements Runnable {
 
 	private int incPositionY(int positionY) {
 		positionY += 1;
-		this.playerModel.setPositionY((positionY) % 4);
+		this.playerModel.setPositionY((positionY) % Integer.parseInt(dim));
 		return positionY;
 	}
 
 	private int decPositionX(int positionX) {
 		if (positionX <= 0) {
-			positionX = 4;
+			positionX = Integer.parseInt(dim);
 		}
 		positionX -= 1;
 		this.playerModel.setPositionX(positionX);
@@ -236,11 +236,11 @@ public class Client implements Runnable {
 
 	private int incPositionX(int positionX) {
 		positionX += 1;
-		this.playerModel.setPositionX((positionX) % 4);
+		this.playerModel.setPositionX((positionX) % Integer.parseInt(dim));
 		return positionX;
 	}
 
-	private void checkPlayerZone() throws TimeoutException {
+	private void checkPlayerInfo() throws TimeoutException {
 		String playerZone = "";
 
 		try {
@@ -251,12 +251,14 @@ public class Client implements Runnable {
 			String neighbourId = parts[2];
 			String neighbourName = parts[3];
 			String zone = parts[4];
+			String dime = parts[5];
 
 			this.zoneId = zone;
 			this.isCollide = collideBool;
 			this.isNeighbour = isNeighbourBool;
 			this.neighbourZoneId = neighbourId;
 			this.neighbourPlayerUsername = neighbourName;
+			this.dim = dime;
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {

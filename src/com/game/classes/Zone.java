@@ -4,11 +4,12 @@ import com.game.models.ZoneModel;
 
 public class Zone {
 	private ZoneModel zoneModel;
-	public ZoneModel checkPlayerZone(int positionX, int positionY) {
-		ZoneModel zone0 = new ZoneModel(0, 1, 0, 1);
-		ZoneModel zone1 = new ZoneModel(0, 1, 2, 3);
-		ZoneModel zone2 = new ZoneModel(2, 3, 0, 1);
-		ZoneModel zone3 = new ZoneModel(2, 3, 2, 3);
+
+	public ZoneModel checkPlayerZone(int positionX, int positionY, int dim) {
+		ZoneModel zone0 = new ZoneModel(0, (dim / 2) - 1, 0, (dim / 2) - 1);
+		ZoneModel zone1 = new ZoneModel(0, (dim / 2) - 1, dim / 2, dim - 1);
+		ZoneModel zone2 = new ZoneModel(dim / 2, dim - 1, 0, (dim / 2) - 1);
+		ZoneModel zone3 = new ZoneModel(dim / 2, dim - 1, dim / 2, dim - 1);
 		if (positionX >= zone0.start_x && positionX <= zone0.end_x && positionY >= zone0.start_y
 				&& positionY <= zone0.end_y) {
 			zoneModel = zone0;

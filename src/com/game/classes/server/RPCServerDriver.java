@@ -4,17 +4,16 @@ import java.io.IOException;
 import java.util.Scanner;
 import java.util.concurrent.TimeoutException;
 
-import javax.swing.JFrame;
-
-import com.game.classes.Zone;
-import com.game.helper.Util;
 import com.game.models.ZoneModel;
-import com.game.ui.MapGidLayout;
 
 public class RPCServerDriver {
 	public static void main(String[] args) throws IOException, TimeoutException {
-		// map = new MapGidLayout();
-		new Thread(new RPCServer()).start();
+		System.out.println("Enter Map dimension");
+		ZoneModel zoneModel = new ZoneModel(0, 0, 0, 0);
+		Scanner scanner = new Scanner(System.in);
+		String dim = scanner.nextLine();
+		zoneModel.setDim(dim);
+		new Thread(new RPCServer(zoneModel)).start();
 	}
-	
+
 }
