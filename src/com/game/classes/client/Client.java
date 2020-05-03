@@ -2,7 +2,6 @@ package com.game.classes.client;
 
 import com.game.helper.Util;
 import com.game.models.PlayerModel;
-import com.game.ui.MapGidLayout;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -12,17 +11,13 @@ import com.rabbitmq.client.DeliverCallback;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+
 import java.util.Random;
 import java.util.Scanner;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeoutException;
-
-import javax.swing.JFrame;
 
 public class Client implements Runnable {
 	private ConnectionFactory factory;
@@ -40,18 +35,13 @@ public class Client implements Runnable {
 	private String neighbourZoneId;
 	private String neighbourPlayerUsername;
 	private String dim;
-	private MapGidLayout map;
-	private JFrame f;
-	private String playerCoordinates;
 
-	protected Client(PlayerModel playerModel) throws IOException, TimeoutException {
+	public Client(PlayerModel playerModel) throws IOException, TimeoutException {
 		this.requestQueueName = "rpc_queue_main";
-		this.playerModel = playerModel;
+		this.setPlayerModel(playerModel);
 		this.factory = Util.connectToServer(factory);
 		connection = factory.newConnection();
 		channel = connection.createChannel();
-		this.map = new MapGidLayout();
-		this.f = new JFrame();
 	}
 
 	@Override
@@ -60,13 +50,13 @@ public class Client implements Runnable {
 		String pressedKey = "";
 		int positionX = this.playerModel.getPositionX();
 		int positionY = this.playerModel.getPositionY();
-		System.out.println("press 'e' to enter the map from a random entry");
-		try {
+		System.out.println("To enter the map in a random position write the following '/enter'");
+		/*try {
 			consumeCoordinates();
 		} catch (IOException | TimeoutException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
-		}
+		}*/
 		while (true) {
 			pressedKey = scanner.nextLine();
 			if (pressedKey.equals("/exit")) {
@@ -85,7 +75,7 @@ public class Client implements Runnable {
 				try {
 					if (isNeighbour.equals("1"))
 						this.sayHello();
-					broadCastCoordinatesToAllZones();
+					//broadCastCoordinatesToAllZones();
 					if (prevZoneId != null || this.zoneId != null) {
 						this.consumeMessages(this.zoneId, prevZoneId);
 					}
@@ -103,14 +93,6 @@ public class Client implements Runnable {
 				e.printStackTrace();
 			}
 		}
-	}
-
-	private void initGrid(MapGidLayout map) {
-		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		f.add(map);
-		f.setSize(400, 400);
-		f.setLocation(200, 200);
-		f.setVisible(true);
 	}
 
 	private void consumeMessages(String zoneId, String prevZoneId) throws IOException, TimeoutException {
@@ -169,8 +151,7 @@ public class Client implements Runnable {
 		DeliverCallback deliverCallback = (consumerTag, delivery) -> {
 			String message = new String(delivery.getBody(), "UTF-8");
 			System.out.println(" [x] Received '" + delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
-			this.playerCoordinates = message;
-			this.draw();
+
 		};
 		channel.basicConsume(queueName, true, deliverCallback, consumerTag -> {
 		});
@@ -192,8 +173,8 @@ public class Client implements Runnable {
 		}
 	}
 
-	private void playerMovement(String pressedKey, int positionX, int positionY) throws TimeoutException {
-		if (pressedKey.equals("e")) {
+	public void playerMovement(String pressedKey, int positionX, int positionY) throws TimeoutException {
+		if (pressedKey.equals("/enter")) {
 			this.checkPlayerInfo();
 			this.playerModel.setPositionX(random.nextInt(Integer.parseInt(dim)));
 			this.playerModel.setPositionY(random.nextInt(Integer.parseInt(dim)));
@@ -236,8 +217,58 @@ public class Client implements Runnable {
 				System.out.println("Can't move to the left we have a collision");
 			}
 
+		}else if (pressedKey.equals("q")) {
+			moveTopLeft(positionX,positionY);
+			this.checkPlayerInfo();
+			if (isCollide.equals("1")) {
+				positionY = incPositionY(positionY);
+				System.out.println("Can't move to the top left we have a collision");
+			}
+		}
+		else if (pressedKey.equals("e")) {
+			moveTopRight(positionX,positionY);
+			this.checkPlayerInfo();
+			if (isCollide.equals("1")) {
+				positionY = incPositionY(positionY);
+				System.out.println("Can't move to the top right we have a collision");
+			}
+		}else if (pressedKey.equals("c")) {
+			moveBottomRight(positionX,positionY);
+			this.checkPlayerInfo();
+			if (isCollide.equals("1")) {
+				positionY = incPositionY(positionY);
+				System.out.println("Can't move to the bottom right we have a collision");
+			}
+		}else if (pressedKey.equals("z")) {
+			moveBottomLeft(positionX,positionY);
+			this.checkPlayerInfo();
+			if (isCollide.equals("1")) {
+				positionY = incPositionY(positionY);
+				System.out.println("Can't move to the bottom left we have a collision");
+			}
 		}
 	}
+	
+	private void moveTopLeft(int positionX,int positionY) {
+		positionX=incPositionX(positionX);
+		positionY=decPositionY(positionY);
+	}
+	
+	private void moveTopRight(int positionX,int positionY) {
+		positionX=incPositionX(positionX);
+		positionY=incPositionY(positionY);
+	}
+	
+	private void moveBottomRight(int positionX,int positionY) {
+		positionX=decPositionX(positionX);
+		positionY=incPositionY(positionY);
+	}
+
+	private void moveBottomLeft(int positionX,int positionY) {
+		positionX=decPositionX(positionX);
+		positionY=decPositionY(positionY);
+	}
+
 
 	private int decPositionY(int positionY) {
 		if (positionY <= 0) {
@@ -269,7 +300,7 @@ public class Client implements Runnable {
 		return positionX;
 	}
 
-	private void checkPlayerInfo() throws TimeoutException {
+	public void checkPlayerInfo() throws TimeoutException {
 		String playerZone = "";
 
 		try {
@@ -282,26 +313,17 @@ public class Client implements Runnable {
 			String zone = parts[4];
 			String dime = parts[5];
 
-			this.zoneId = zone;
-			this.isCollide = collideBool;
-			this.isNeighbour = isNeighbourBool;
-			this.neighbourZoneId = neighbourId;
-			this.neighbourPlayerUsername = neighbourName;
-			this.dim = dime;
+			this.setZoneId(zone);
+			this.setIsCollide(collideBool);
+			this.setIsNeighbour(isNeighbourBool);
+			this.setNeighbourZoneId(neighbourId);
+			this.setNeighbourPlayerUsername(neighbourName);
+			this.setDim(dime);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-	}
-
-	private void draw() {
-		String[] parts = this.playerCoordinates.split(":");
-		String positionX = parts[0];
-		String positionY = parts[1];
-		String userName = parts[2];
-		this.initGrid(this.map);
-		this.map.playerAtPosition(Integer.parseInt(positionX), Integer.parseInt(positionY), userName);
 	}
 
 	private void close(Channel channel) throws IOException {
@@ -337,4 +359,61 @@ public class Client implements Runnable {
 		channel.basicCancel(ctag);
 		return result;
 	}
+
+	public String getZoneId() {
+		return zoneId;
+	}
+
+	public void setZoneId(String zoneId) {
+		this.zoneId = zoneId;
+	}
+
+	public String getIsCollide() {
+		return isCollide;
+	}
+
+	public void setIsCollide(String isCollide) {
+		this.isCollide = isCollide;
+	}
+
+	public String getIsNeighbour() {
+		return isNeighbour;
+	}
+
+	public void setIsNeighbour(String isNeighbour) {
+		this.isNeighbour = isNeighbour;
+	}
+
+	public String getNeighbourZoneId() {
+		return neighbourZoneId;
+	}
+
+	public void setNeighbourZoneId(String neighbourZoneId) {
+		this.neighbourZoneId = neighbourZoneId;
+	}
+
+	public String getNeighbourPlayerUsername() {
+		return neighbourPlayerUsername;
+	}
+
+	public void setNeighbourPlayerUsername(String neighbourPlayerUsername) {
+		this.neighbourPlayerUsername = neighbourPlayerUsername;
+	}
+
+	public String getDim() {
+		return dim;
+	}
+
+	public void setDim(String dim) {
+		this.dim = dim;
+	}
+
+	public PlayerModel getPlayerModel() {
+		return playerModel;
+	}
+
+	public void setPlayerModel(PlayerModel playerModel) {
+		this.playerModel = playerModel;
+	}
+
 }
