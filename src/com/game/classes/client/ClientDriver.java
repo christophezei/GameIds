@@ -11,8 +11,8 @@ public class ClientDriver {
 		PlayerModel player = new PlayerModel();
 		System.out.println("Enter player username");
 		Scanner scanner = new Scanner(System.in);
-		args[0] = scanner.nextLine();
-		player.setUserName(args[0]); 
+		String playerUserName = scanner.nextLine();
+		player.setUserName(playerUserName); 
 		new Thread(new Client(player)).start();
 	}
 
