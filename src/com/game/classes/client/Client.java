@@ -50,13 +50,8 @@ public class Client implements Runnable {
 		String pressedKey = "";
 		int positionX = this.playerModel.getPositionX();
 		int positionY = this.playerModel.getPositionY();
-		System.out.println("To enter the map in a random position write the following '/enter'");
-		/*try {
-			consumeCoordinates();
-		} catch (IOException | TimeoutException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}*/
+		System.out.println("To enter the map in a random position write the following '/go'");
+
 		while (true) {
 			pressedKey = scanner.nextLine();
 			if (pressedKey.equals("/exit")) {
@@ -75,7 +70,7 @@ public class Client implements Runnable {
 				try {
 					if (isNeighbour.equals("1"))
 						this.sayHello();
-					//broadCastCoordinatesToAllZones();
+
 					if (prevZoneId != null || this.zoneId != null) {
 						this.consumeMessages(this.zoneId, prevZoneId);
 					}
@@ -174,7 +169,7 @@ public class Client implements Runnable {
 	}
 
 	public void playerMovement(String pressedKey, int positionX, int positionY) throws TimeoutException {
-		if (pressedKey.equals("/enter")) {
+		if (pressedKey.equals("/go")) {
 			this.checkPlayerInfo();
 			this.playerModel.setPositionX(random.nextInt(Integer.parseInt(dim)));
 			this.playerModel.setPositionY(random.nextInt(Integer.parseInt(dim)));
@@ -184,6 +179,7 @@ public class Client implements Runnable {
 			if (isCollide.equals("1")) {
 				this.playerModel.setPositionX(random.nextInt(Integer.parseInt(dim)));
 				this.playerModel.setPositionY(random.nextInt(Integer.parseInt(dim)));
+				this.checkPlayerInfo();
 			}
 		}
 		if (pressedKey.equals("w")) {
@@ -217,58 +213,68 @@ public class Client implements Runnable {
 				System.out.println("Can't move to the left we have a collision");
 			}
 
-		}else if (pressedKey.equals("q")) {
-			moveTopLeft(positionX,positionY);
+		} else if (pressedKey.equals("q")) {
+			int tempPosX = positionX;
+			int tempPosY = positionY;
+			moveTopLeft(positionX, positionY);
 			this.checkPlayerInfo();
 			if (isCollide.equals("1")) {
-				positionY = incPositionY(positionY);
+				this.playerModel.setPositionX(tempPosX);
+				this.playerModel.setPositionY(tempPosY);
 				System.out.println("Can't move to the top left we have a collision");
 			}
-		}
-		else if (pressedKey.equals("e")) {
-			moveTopRight(positionX,positionY);
+		} else if (pressedKey.equals("e")) {
+			int tempPosX = positionX;
+			int tempPosY = positionY;
+			moveTopRight(positionX, positionY);
 			this.checkPlayerInfo();
 			if (isCollide.equals("1")) {
-				positionY = incPositionY(positionY);
+				this.playerModel.setPositionX(tempPosX);
+				this.playerModel.setPositionY(tempPosY);
 				System.out.println("Can't move to the top right we have a collision");
 			}
-		}else if (pressedKey.equals("c")) {
-			moveBottomRight(positionX,positionY);
+		} else if (pressedKey.equals("c")) {
+			int tempPosX = positionX;
+			int tempPosY = positionY;
+			moveBottomRight(positionX, positionY);
 			this.checkPlayerInfo();
 			if (isCollide.equals("1")) {
-				positionY = incPositionY(positionY);
+				this.playerModel.setPositionX(tempPosX);
+				this.playerModel.setPositionY(tempPosY);
 				System.out.println("Can't move to the bottom right we have a collision");
 			}
-		}else if (pressedKey.equals("z")) {
-			moveBottomLeft(positionX,positionY);
+		} else if (pressedKey.equals("z")) {
+			int tempPosX = positionX;
+			int tempPosY = positionY;
+			moveBottomLeft(positionX, positionY);
 			this.checkPlayerInfo();
 			if (isCollide.equals("1")) {
-				positionY = incPositionY(positionY);
+				this.playerModel.setPositionX(tempPosX);
+				this.playerModel.setPositionY(tempPosY);
 				System.out.println("Can't move to the bottom left we have a collision");
 			}
 		}
 	}
-	
-	private void moveTopLeft(int positionX,int positionY) {
-		positionX=incPositionX(positionX);
-		positionY=decPositionY(positionY);
-	}
-	
-	private void moveTopRight(int positionX,int positionY) {
-		positionX=incPositionX(positionX);
-		positionY=incPositionY(positionY);
-	}
-	
-	private void moveBottomRight(int positionX,int positionY) {
-		positionX=decPositionX(positionX);
-		positionY=incPositionY(positionY);
+
+	private void moveTopLeft(int positionX, int positionY) {
+		positionX = incPositionX(positionX);
+		positionY = decPositionY(positionY);
 	}
 
-	private void moveBottomLeft(int positionX,int positionY) {
-		positionX=decPositionX(positionX);
-		positionY=decPositionY(positionY);
+	private void moveTopRight(int positionX, int positionY) {
+		positionX = incPositionX(positionX);
+		positionY = incPositionY(positionY);
 	}
 
+	private void moveBottomRight(int positionX, int positionY) {
+		positionX = decPositionX(positionX);
+		positionY = incPositionY(positionY);
+	}
+
+	private void moveBottomLeft(int positionX, int positionY) {
+		positionX = decPositionX(positionX);
+		positionY = decPositionY(positionY);
+	}
 
 	private int decPositionY(int positionY) {
 		if (positionY <= 0) {
