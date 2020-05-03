@@ -53,6 +53,12 @@ public class Client implements Runnable {
 		System.out.println("To enter the map in a random position write the following '/go'");
 
 		while (true) {
+			try {
+				consumeCoordinates();
+			} catch (IOException | TimeoutException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
 			pressedKey = scanner.nextLine();
 			if (pressedKey.equals("/exit")) {
 				try {
@@ -70,7 +76,7 @@ public class Client implements Runnable {
 				try {
 					if (isNeighbour.equals("1"))
 						this.sayHello();
-
+					broadCastCoordinatesToAllZones();
 					if (prevZoneId != null || this.zoneId != null) {
 						this.consumeMessages(this.zoneId, prevZoneId);
 					}
